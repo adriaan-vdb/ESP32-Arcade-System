@@ -1,3 +1,18 @@
+/*
+
+For now the code just outputs to the serial monitor the following values:
+x: -1, 0, 1 (left, middle or right for joystick)
+y: -1, 0, 1 (down, middle or up for joystick)
+sw: 0, 1 (1 when joystick is pressed)
+b1: 0, 1 (1 when button 1 is pressed)
+b2: 0, 1 (1 when button 2 is pressed)
+
+In future, will adjust code to be able to:
+1. Send values to a receiver
+2. Display stuff to the screen
+
+*/
+
 // Pin numbers for joystick x, y and switch
 const int joystick_x = 1;
 const int joystick_y = 2;
