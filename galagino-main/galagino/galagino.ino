@@ -17,6 +17,21 @@
 #include "VGA.h"
 #include <FONT_9x16.h>
 
+
+#include <esp_now.h>
+#include <WiFi.h>
+
+typedef struct struct_message {
+    int joystick_x_value;
+    int joystick_y_value;
+    int joystick_sw_value;
+    int button_1_value;
+    int button_2_value;
+} struct_message;
+
+// Create a struct_message called myData
+struct_message myData;
+
 VGA vga;
 
 int scale = 2;
@@ -158,6 +173,17 @@ unsigned short greyscale(unsigned short in) {
 }
 
 // JT VGA STUFF
+
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+  memcpy(&myData, incomingData, sizeof(myData));
+  Serial.print("Data received: ");
+  Serial.println(myData.joystick_x_value);
+  Serial.println(myData.joystick_y_value);
+  Serial.println(myData.joystick_sw_value);
+  Serial.println(myData.button_1_value);
+  Serial.println(myData.button_2_value);
+  Serial.println();
+}
 
 int getHue(int red, int green, int blue) {
     float min = std::min(std::min(red, green), blue);
@@ -1020,6 +1046,19 @@ void setup() {
 
   // JT VGA STUFF
   vga.clear();
+
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+  
+  // Once ESPNow is successfully Init, we will register for recv CB to
+  // get recv packer info
+  esp_now_register_recv_cb(OnDataRecv);
   
   // AV
   tft.init();  
@@ -1090,11 +1129,17 @@ unsigned char buttons_get(void) {
   unsigned char input_states = 0;
 
   // Read joystick and button states
-  int joystick_x_value = analogRead(joystick_x);
-  int joystick_y_value = analogRead(joystick_y);
-  int joystick_sw_value = digitalRead(joystick_sw);
-  int button_1_value = digitalRead(button_1);
-  int button_2_value = digitalRead(button_2);
+  // int joystick_x_value = analogRead(joystick_x);
+  // int joystick_y_value = analogRead(joystick_y);
+  // int joystick_sw_value = digitalRead(joystick_sw);
+  // int button_1_value = digitalRead(button_1);
+  // int button_2_value = digitalRead(button_2);
+
+  int joystick_x_value = myData.joystick_x_value;
+  int joystick_y_value = myData.joystick_y_value;
+  int joystick_sw_value = myData.joystick_sw_value;
+  int button_1_value = myData.button_1_value;
+  int button_2_value = myData.button_2_value;
 
   // Map joystick x/y to left/right/up/down buttons
   input_states |= (joystick_x_value < 1500) ? BUTTON_LEFT : 0;
