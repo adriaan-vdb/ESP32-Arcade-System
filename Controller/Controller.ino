@@ -13,14 +13,14 @@ In future, will adjust code to be able to:
 
 */
 
-// Pin numbers for joystick x, y and switch
-const int joystick_x = 1;
-const int joystick_y = 2;
-const int joystick_sw = 3;
+// Pin numbers for joystick x, y and switch; originally, 1 2 3
+const int joystick_x = 18;
+const int joystick_y = 17;
+const int joystick_sw = 16;
 
-// Pin numbers for buttons
-const int button_1 = 11;
-const int button_2 = 10;
+// Pin numbers for buttons; originally 11 10
+const int button_1 = 13;
+const int button_2 = 12;
 
 void setup() {
   // put your setup code here, to run once:
