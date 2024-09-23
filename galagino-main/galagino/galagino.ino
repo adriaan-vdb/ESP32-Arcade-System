@@ -22,11 +22,11 @@
 #include <WiFi.h>
 
 typedef struct struct_message {
-    int joystick_x_value;
-    int joystick_y_value;
-    int joystick_sw_value;
-    int button_1_value;
-    int button_2_value;
+    int joystick_x_value = 0;
+    int joystick_y_value = 0;
+    int joystick_sw_value = 1;
+    int button_1_value = 1;
+    int button_2_value = 1;
 } struct_message;
 
 // Create a struct_message called myData
@@ -901,8 +901,8 @@ _1942_END
   // render and transmit screen in two halfs as the display
   // running at 40Mhz can only update every second 60 hz game frame
   for(int half=0;half<2;half++) {
-    Serial.print("Rendering half: ");
-    Serial.println(half);
+    // Serial.print("Rendering half: ");
+    // Serial.println(half);
 
     // vga.clear(0);
 
@@ -1010,6 +1010,7 @@ void emulation_task(void *p) {
 
 void setup() {
   Serial.begin(115200);
+
   Serial.println("Galagino"); 
 
   // JT VGA STUFF
@@ -1026,47 +1027,10 @@ void setup() {
   int sw = 0;
   int b1 = 0;
   int b2 = 0;
-
-  const PinConfig pins(-1,-1,1,-1,-1,  -1,-1,-1,2,-1,-1,  -1,-1,-1,3,-1,  10,11); // R G B h v
-
-	Mode mode = Mode::MODE_640x480x60;
-	
-	if(!vga.init(pins, mode, 8, 3)) while(1) delay(1);
-	
-	vga.start();
-
-	for(int y = 0; y < 480; y++)
-		for(int x = 0; x < 640; x++)
-			vga.dotdit(x, y, x, y, 255-x);
-
-	vga.setFont(FONT_9x16);
-	vga.start();
-	
-	delay(5000);
-
-  // JT VGA STUFF
-  vga.clear();
-
-  // Set device as a Wi-Fi Station
-  WiFi.mode(WIFI_STA);
-
-  // Init ESP-NOW
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
-  
-  // Once ESPNow is successfully Init, we will register for recv CB to
-  // get recv packer info
-  esp_now_register_recv_cb(OnDataRecv);
   
   // AV
   tft.init();  
   tft.fillScreen(TFT_BLACK);
-  
-
-  Serial.print("ESP-IDF "); 
-  Serial.println(ESP_IDF_VERSION, HEX); 
 
 #ifdef WORKAROUND_I2S_APLL_PROBLEM
   Serial.println("I2S APLL workaround active"); 
@@ -1123,6 +1087,46 @@ void setup() {
       0); /* Core where the task should run */
 
   tft.begin();
+
+  const PinConfig pins(-1,-1,1,-1,-1,  -1,-1,-1,2,-1,-1,  -1,-1,-1,3,-1,  10,11); // R G B h v
+
+	Mode mode = Mode::MODE_640x400x70;
+	
+  Serial.println(ESP.getFreeHeap());
+	if(!vga.init(pins, mode, 8, 3)) while(1) delay(1);
+	Serial.println(ESP.getFreeHeap());
+
+	vga.start();
+
+	// for(int y = 0; y < 240; y++)
+	// 	for(int x = 0; x < 320; x++)
+	// 		vga.dotdit(x, y, x, y, 255-x);
+
+	vga.setFont(FONT_9x16);
+	vga.start();
+	
+	// delay(5000);
+
+  // JT VGA STUFF
+  // for(int y = 0; y < 240; y++)
+	// 	for(int x = 0; x < 320; x++)
+	// 		vga.dot(x, y, x, y, 0);
+
+  Serial.print("ESP-IDF "); 
+  Serial.println(ESP_IDF_VERSION, HEX); 
+
+  //Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+  
+  // Once ESPNow is successfully Init, we will register for recv CB to
+  // get recv packer info
+  esp_now_register_recv_cb(OnDataRecv);
 }
 
 unsigned char buttons_get(void) {
