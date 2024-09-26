@@ -279,7 +279,7 @@ void VGAWrite(uint16_t* frame_buffer, uint32_t width, int y_offset) {
 
         // Calculate the x and y positions
         int x = i % 224;  // Assuming the screen width is 224 pixels
-        int y = i / 224 + y_offset;
+        int y = i / 224 + y_offset + 30;
 
         // Draw the pixel using vga.dot() with the 8-bit color
         vga.dot(x, y, r * 1 + g * 8 + b * 64);
@@ -1278,28 +1278,43 @@ void renderFlappyBirdMenu(){
   for (short row = 0; row < 96; row += 8) {
     render_logo(row, flappybird_logo, true);
     tft.pushImage(-shiftLeft, row + logoHeight, 224, 8, frame_buffer);
+    VGAWrite(frame_buffer, 224 * 8, row);
   }
 
   // Maybe use code to align everything based on screen dimensions? 
   int initMenuHeight = 120;
   tft.setTextColor(TFT_WHITE);
+  vga.setTextColor(73, 0);
   tft.setTextSize(2);
   tft.setCursor(10, initMenuHeight);
+  vga.setCursor(40, initMenuHeight + 30);
   tft.println("Press to Jump");
+  vga.println("Press to Jump");
+  
   tft.setCursor(10, initMenuHeight + 30);
+  vga.setCursor(40, initMenuHeight + 30 + 30);
   tft.println("P1: Left Btn");
+  vga.println("P1: Left Btn");
   tft.setCursor(10, initMenuHeight + 60);
+  vga.setCursor(40, initMenuHeight + 60 + 30);
   tft.println("P2: Right Btn");
+  vga.println("P2: Right Btn");
   tft.setTextColor(TFT_GREEN);
+  vga.setTextColor(1, 0);
   tft.setTextSize(3);
   tft.setCursor(40, initMenuHeight + 105);
+  vga.setCursor(60, initMenuHeight + 105 + 30);
   tft.println("PRESS");
+  vga.println("PRESS");
   tft.setCursor(40, initMenuHeight + 135);
+  vga.setCursor(60, initMenuHeight + 135 + 30);
   tft.println("START");
+  vga.println("START");
 }
 
 void setupFlappyBird2P() {
   tft.fillScreen(TFT_BLACK);
+  vga.fillRect(0, 0, 630, 390, 0);
   pinMode(FLAPPY_BIRD_SWITCH_BUTTON_PIN, INPUT_PULLUP);  // Initialize button pin
   pinMode(BTN_START_PIN, INPUT_PULLUP);  // Start button
   pinMode(BTN_JUMP_P1_PIN, INPUT_PULLUP);  // Player 1 jump button
@@ -1328,6 +1343,7 @@ void runFlappyBird2P() {
         // Button is pressed, toggle between menu and game
         inMenu = !inMenu;
         tft.fillScreen(TFT_BLACK);  // Clear screen
+        vga.fillRect(0, 0, 630, 390, 0);
       }
     }
   }
@@ -1406,61 +1422,90 @@ bool isButtonPressed(int value, unsigned long &lastDebounceTime, int &lastButton
 // Setup the menu system
 void setupMenuSystem() {
   pinMode(SOUND_TOGGLE_BUTTON_PIN, INPUT_PULLUP);  // Configure button pin
+
   tft.fillScreen(TFT_BLACK);
+  vga.fillRect(0, 0, 630, 390, 0);
   tft.setTextColor(TFT_WHITE);
+  vga.setTextColor(73, 0);
   tft.setTextSize(2);
   
   // Display menu title
   tft.setCursor(20, 10);
+  vga.setCursor(20, 10 + 30);
   tft.println("Settings");
+  vga.println("Settings");
 
   // Display updated sound state
   tft.setCursor(10, 40);
+  vga.setCursor(10, 40+30);
   if (soundOn) {
     tft.setTextColor(TFT_GREEN);
+    vga.setTextColor(1, 0);
     tft.println("Sound: ON");
+    vga.println("Sound: ON");
   } else {
     tft.setTextColor(TFT_RED);
+    vga.setTextColor(64, 0);
     tft.println("Sound: OFF");
+    vga.println("Sound: OFF");
   }
 
   tft.setTextColor(TFT_WHITE);
+  vga.setTextColor(73, 0);
   tft.setCursor(10, 80);
+  vga.setCursor(10, 80+30);
   tft.println("Press X To");
+  vga.println("Press X To");
   tft.setCursor(10, 110);
+  vga.setCursor(10, 110+30);
   tft.println("Toggle Sound");
+  vga.println("Toggle Sound");
 }
 
 void runMenuSystem() {
   // Check if the button is pressed (active-low button)
-  if (digitalRead(SOUND_TOGGLE_BUTTON_PIN) == LOW) {
+  if (myData.button_1_value == LOW) {
     delay(200);  // Simple debounce delay
     soundOn = !soundOn;  // Toggle the sound state
     
     // Clear the screen and update the menu with the new sound state
     tft.fillScreen(TFT_BLACK);
+    vga.fillRect(0, 0, 630, 390, 0);
     tft.setTextColor(TFT_WHITE);
+    vga.setTextColor(73, 0);
     tft.setTextSize(2);
     
     // Display menu title
     tft.setCursor(20, 10);
+    vga.setCursor(20, 10 + 30);
     tft.println("Settings");
+    vga.println("Settings");
 
     // Display updated sound state
     tft.setCursor(10, 40);
+    vga.setCursor(10, 40+30);
     if (soundOn) {
       tft.setTextColor(TFT_GREEN);
+      vga.setTextColor(1, 0);
       tft.println("Sound: ON");
+      vga.println("Sound: ON");
     } else {
       tft.setTextColor(TFT_RED);
+      vga.setTextColor(64, 0);
       tft.println("Sound: OFF");
+      vga.println("Sound: OFF");
     }
 
     tft.setTextColor(TFT_WHITE);
+    vga.setTextColor(73, 0);
     tft.setCursor(10, 80);
+    vga.setCursor(10, 80+30);
     tft.println("Press X To");
+    vga.println("Press X To");
     tft.setCursor(10, 110);
+    vga.setCursor(10, 110+30);
     tft.println("Toggle Sound");
+    vga.println("Toggle Sound");
     
     // Add delay to avoid bouncing issues
     delay(500);

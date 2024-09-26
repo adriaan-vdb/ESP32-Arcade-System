@@ -37,6 +37,7 @@ int running_score = 0;
 // Initialize the Flappy Bird game
 void initFlappyBird2P() {
     tft.setTextColor(TFT_WHITE);
+    vga.setTextColor(73, 0);
     tft.setTextSize(2);
 
     // Reset bird positions and velocities
@@ -72,6 +73,12 @@ void updateBird(Bird &bird, bool &playerDead) {
 // Render the bird on screen
 void drawBird(Bird &bird, uint16_t color) {
     tft.fillCircle(bird.x, bird.y, 8, color);
+    if (color == TFT_BLUE) {
+      vga.fillCircle(bird.x, bird.y + 30, 8, 8);
+    }
+    else {
+      vga.fillCircle(bird.x, bird.y + 30, 8, 64);
+    }
 }
 
 // Handle pipe movement and rendering
@@ -97,7 +104,9 @@ void updatePipes() {
 // Render pipes on screen
 void drawPipes() {
     tft.fillRect(pipe1.x, 0, pipeWidth, pipe1.height, TFT_GREEN);  // Top pipe
+    vga.fillRect(pipe1.x, 0 + 30, pipeWidth, pipe1.height, 1);
     tft.fillRect(pipe1.x, pipe1.height + MIN_GAP_HEIGHT, pipeWidth, TFT_HEIGHT - pipe1.height - MIN_GAP_HEIGHT - groundHeight, TFT_GREEN);  // Bottom pipe
+    vga.fillRect(pipe1.x, pipe1.height + MIN_GAP_HEIGHT + 30, pipeWidth, TFT_HEIGHT - pipe1.height - MIN_GAP_HEIGHT - groundHeight, 1);
 }
 
 // Check for collision with pipes
@@ -131,14 +140,18 @@ void mainFlappyBird2P() {
 
     if (!flappyBirdStarted) {
         tft.setTextColor(TFT_WHITE);
+        vga.setTextColor(73, 0);
         tft.setTextSize(2);
         tft.setCursor(10, 10);
+        vga.setCursor(10, 10+30);
         tft.println("Press START");
+        vga.println("Press START");
         return;
     }
 
     if (!gameOver) {
         tft.fillScreen(TFT_BLACK);
+        vga.fillRect(0, 0, 630, 390, 0);
 
         // Update and draw pipes
         updatePipes();
@@ -163,33 +176,46 @@ void mainFlappyBird2P() {
 
         // Draw the ground
         tft.fillRect(0, TFT_HEIGHT - groundHeight, TFT_WIDTH, groundHeight, TFT_BROWN);
+        vga.fillRect(0, TFT_HEIGHT - groundHeight+30, TFT_WIDTH, groundHeight, 65);
 
         // Display live score
         tft.setTextSize(2);
         tft.setTextColor(TFT_YELLOW);
+        vga.setTextColor(65, 0);
         tft.setCursor(150, 10);
+        vga.setCursor(10, 10+30);
         tft.setRotation(1);
         tft.println(running_score);
+        vga.println(String(running_score).c_str());
         tft.setRotation(0);
 
     } else {
         // Display Game Over message
         tft.setCursor(5, 10);
+        vga.setCursor(5, 10+30);
         tft.setTextColor(TFT_WHITE);
+        vga.setTextColor(73, 0);
         tft.setTextSize(3);
         tft.println("Game Over");
+        vga.println("Game Over");
 
         // Display final scores for both players
         tft.setTextSize(2);
         tft.setCursor(10, 50);
+        vga.setCursor(10, 50+30);
         tft.println("P1: " + String(bird1.score));
+        vga.println(("P1: " + String(bird1.score)).c_str());
         tft.setCursor(10, 80);
+        vga.setCursor(10, 80+30);
         tft.println("P2: " + String(bird2.score));
+        vga.println(("P2: " + String(bird2.score)).c_str());
 
         // Press start to restart
         tft.setTextSize(1);
         tft.setCursor(10, 120);
+        vga.setCursor(10, 120+30);
         tft.println("Press Start to Restart");
+        vga.println("Press Start to Restart");
     }
 }
 

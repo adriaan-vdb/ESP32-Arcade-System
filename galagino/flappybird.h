@@ -3,6 +3,11 @@
 
 #include <TFT_eSPI.h>
 
+#include "VGA.h"
+#include <FONT_9x16.h>
+
+extern VGA vga;
+
 #include "flappybird_logo.h"
 
 extern const unsigned short flappybird_logo[];
