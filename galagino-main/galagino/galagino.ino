@@ -176,7 +176,7 @@ unsigned short greyscale(unsigned short in) {
 
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&myData, incomingData, sizeof(myData));
-  Serial.print("Data received: ");
+  Serial.println("Data received: ");
   Serial.println(myData.joystick_x_value);
   Serial.println(myData.joystick_y_value);
   Serial.println(myData.joystick_sw_value);
@@ -1145,11 +1145,32 @@ unsigned char buttons_get(void) {
   int button_1_value = myData.button_1_value;
   int button_2_value = myData.button_2_value;
 
+  int x = 0;
+  int y = 0;
+
+  if (joystick_x_value < 1500 || joystick_x_value > 2500 || joystick_y_value < 1500 || joystick_y_value > 2500) {
+    float angle = atan2(joystick_y_value-2000,joystick_x_value-2000);
+    float pi = 3.14159;
+    float num = 3;
+    if (angle > (num * -1) * pi/12 && angle <= num * pi/12) {
+      x = 1;
+    }
+    else if (angle > num * pi/12 && angle <= (12-num) * pi/12) {
+      y = 1;
+    }
+    else if (angle > (12 - num) * pi/12 || angle <= (num - 12) * pi/12) {
+      x = -1;
+    }
+    else {
+      y = -1;
+    }
+  }
+
   // Map joystick x/y to left/right/up/down buttons
-  input_states |= (joystick_x_value < 1500) ? BUTTON_LEFT : 0;
-  input_states |= (joystick_x_value > 2500) ? BUTTON_RIGHT : 0;
-  input_states |= (joystick_y_value < 1500) ? BUTTON_UP : 0;
-  input_states |= (joystick_y_value > 2500) ? BUTTON_DOWN : 0;
+  input_states |= (x == -1) ? BUTTON_LEFT : 0;
+  input_states |= (x == 1) ? BUTTON_RIGHT : 0;
+  input_states |= (y == -1) ? BUTTON_UP : 0;
+  input_states |= (y == 1) ? BUTTON_DOWN : 0;
 
   // Map joystick switch to fire button
   input_states |= (!joystick_sw_value) ? BUTTON_FIRE : 0;

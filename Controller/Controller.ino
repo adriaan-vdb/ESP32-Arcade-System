@@ -24,6 +24,9 @@ const int button_2 = 10;
 
 #include <esp_now.h>
 #include <WiFi.h>
+#include <TFT_eSPI.h> 
+
+TFT_eSPI tft = TFT_eSPI(); 
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -85,6 +88,42 @@ void setup() {
     Serial.println("Failed to add peer");
     return;
   }
+
+  tft.init();
+  tft.setRotation(3);  // rotate so that display is horizontal
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(3);
+}
+
+void drawShapes(int x, int y, int sw, int b1, int b2) {
+  int yy = 100;
+  int jx = 270;
+  int js = 20;
+  int ss = 15;
+  
+  // Draw Outlines
+  tft.drawString("MAIN CONTROLLER", 10, 10);
+
+  tft.drawCircle(30, yy, 20, TFT_WHITE);
+  tft.drawCircle(80, yy, 20, TFT_WHITE);
+
+  tft.drawTriangle(jx+ss+js, yy, jx+ss, yy-js/2, jx+ss, yy+js/2, TFT_WHITE); // >
+  tft.drawTriangle(jx-ss-js, yy, jx-ss, yy-js/2, jx-ss, yy+js/2, TFT_WHITE); // <
+  tft.drawTriangle(jx-js/2, yy+ss, jx+js/2, yy+ss, jx, yy+ss+js, TFT_WHITE); // V
+  tft.drawTriangle(jx-js/2, yy-ss, jx+js/2, yy-ss, jx, yy-ss-js, TFT_WHITE); // ^
+  tft.drawCircle(jx, yy, 10, TFT_WHITE);
+  
+
+  // Fill conditionally
+  tft.fillCircle(30, yy, 18, (b1 == 1) ? TFT_WHITE : TFT_BLACK);
+  tft.fillCircle(80, yy, 18, (b2 == 1) ? TFT_WHITE : TFT_BLACK);
+
+  tft.fillTriangle(jx+ss+js-2, yy, jx+ss+2, yy-js/2+2, jx+ss+2, yy+js/2-2, (x==1) ? TFT_WHITE : TFT_BLACK); // >
+  tft.fillTriangle(jx-ss-js+2, yy, jx-ss-2, yy-js/2+2, jx-ss-2, yy+js/2-2, (x==-1) ? TFT_WHITE : TFT_BLACK); // <
+  tft.fillTriangle(jx-js/2+2, yy+ss+2, jx+js/2-2, yy+ss+2, jx, yy+ss+js-2, (y==1) ? TFT_WHITE : TFT_BLACK); // V
+  tft.fillTriangle(jx-js/2+2, yy-ss-2, jx+js/2-2, yy-ss-2, jx, yy-ss-js+2, (y==-1) ? TFT_WHITE : TFT_BLACK); // ^
+  tft.fillCircle(jx, yy, 9, (sw == 1) ? TFT_WHITE : TFT_BLACK);
 }
 
 void debugText(int x, int y, int sw, int b1, int b2) {
@@ -108,15 +147,38 @@ void loop() {
   int button_1_value = digitalRead(button_1);
   int button_2_value = digitalRead(button_2);
 
+  int x = 0;
+  int y = 0;
   // Variables set to {-1, 0, 1} depending on position of joystick
-  int x = (joystick_x_value < 1500) ? -1 : (joystick_x_value > 2500) ? 1 : 0;
-  int y = (joystick_y_value < 1500) ? 1 : (joystick_y_value > 2500) ? -1 : 0;
+  if (joystick_x_value < 1500 || joystick_x_value > 2500 || joystick_y_value < 1500 || joystick_y_value > 2500) {
+    float angle = atan2(joystick_y_value-2000,joystick_x_value-2000);
+    Serial.println(y-2000);
+    Serial.println(x-2000);
+    Serial.println(angle);
+    float pi = 3.14159;
+    float num = 3;
+    if (angle > (num * -1) * pi/12 && angle <= num * pi/12) {
+      x = 1;
+    }
+    else if (angle > num * pi/12 && angle <= (12-num) * pi/12) {
+      y = 1;
+    }
+    else if (angle > (12 - num) * pi/12 || angle <= (num - 12) * pi/12) {
+      x = -1;
+    }
+    else {
+      y = -1;
+    }
+  }
+  // int x = (joystick_x_value < 1500) ? -1 : (joystick_x_value > 2500) ? 1 : 0;
+  // int y = (joystick_y_value < 1500) ? 1 : (joystick_y_value > 2500) ? -1 : 0;
   int sw = !joystick_sw_value;
   int b1 = !button_1_value;
   int b2 = !button_2_value;
 
   // Render variables
   debugText(x, y, sw, b1, b2);
+  drawShapes(x, y, sw, b1, b2);
 
   myData.joystick_x_value = joystick_x_value;
   myData.joystick_y_value = joystick_y_value;
