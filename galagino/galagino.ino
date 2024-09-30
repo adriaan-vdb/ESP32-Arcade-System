@@ -95,6 +95,7 @@ unsigned char dkong_obuf_toggle = 0;
 #define IO_EMULATION
 
 TFT_eSPI tft = TFT_eSPI(170, 320); // Init screen size
+TFT_eSprite sprite2 = TFT_eSprite(&tft);  // Define sprite here
 
 // AV to scale image - I think it won't work unless multiple of 2 (8)
 float scaleFactor = min(170.0 / 224.0, 320.0 / 288.0);  
@@ -1105,12 +1106,31 @@ void setup() {
   // Initialize the current program
   if (currentProgram == 0) {
     setupGalagino();
-  } else {
+  } else if (currentProgram == 1){
     setupFlappyBird2P();
   }
 }
 
 void setupGalagino() {
+
+  tft.fillScreen(TFT_BLACK);
+  // Stop any running tasks (e.g., emulation task)
+  if (emulationtask != NULL) {
+    vTaskDelete(emulationtask);  // Delete the previous emulation task if it's running
+    emulationtask = NULL;        // Reset task handle
+  }
+
+  // Free memory allocated for frame_buffer and sprite if already allocated
+  if (frame_buffer != NULL) {
+    free(frame_buffer);
+    frame_buffer = NULL;
+  }
+  if (sprite != NULL) {
+    free(sprite);
+    sprite = NULL;
+  }
+  machine = MCH_MENU;
+
   Serial.println("Galagino"); 
 
   #ifdef WORKAROUND_I2S_APLL_PROBLEM
@@ -1190,7 +1210,7 @@ unsigned char buttons_get(void) {
   if (joystick_x_value < 1500 || joystick_x_value > 2500 || joystick_y_value < 1500 || joystick_y_value > 2500) {
     float angle = atan2(joystick_y_value-2000,joystick_x_value-2000);
     float pi = 3.14159;
-    float num = 3;
+    float num = 2.6;
     if (angle > (num * -1) * pi/12 && angle <= num * pi/12) {
       x = 1;
     }
@@ -1218,14 +1238,15 @@ unsigned char buttons_get(void) {
   // input_states |= (joystick_y_value < 1500) ? BUTTON_UP : 0;
   // input_states |= (joystick_y_value > 2500) ? BUTTON_DOWN : 0;
 
-  // Map joystick switch to fire button
-  input_states |= (!button_2_value) ? BUTTON_FIRE : 0;
+  // // Map joystick switch to fire button
+  // input_states |= (!button_2_value) ? BUTTON_FIRE : 0;
 
   // Map button_1 to start and coin buttons
-  input_states |= (!button_1_value) ? (BUTTON_START | BUTTON_COIN) : 0;
+  input_states |= (!button_1_value) ? (BUTTON_START) : 0; 
+  //   input_states |= (!button_1_value) ? (BUTTON_START | BUTTON_COIN) : 0;
 
   // Map button_2 to fire button
-  input_states |= (!button_2_value) ? BUTTON_FIRE : 0;
+  input_states |= (!button_2_value) ? (BUTTON_FIRE | BUTTON_COIN) : 0;
 
   return input_states;
 }
@@ -1304,8 +1325,8 @@ void renderFlappyBirdMenu(){
   tft.setTextSize(3);
   tft.setCursor(40, initMenuHeight + 105);
   vga.setCursor(60, initMenuHeight + 105 + 30);
-  tft.println("PRESS");
-  vga.println("PRESS");
+  tft.println("JOYUP");
+  vga.println("JOYUP");
   tft.setCursor(40, initMenuHeight + 135);
   vga.setCursor(60, initMenuHeight + 135 + 30);
   tft.println("START");
@@ -1313,6 +1334,13 @@ void renderFlappyBirdMenu(){
 }
 
 void setupFlappyBird2P() {
+  // Stop any running tasks (if any)
+  if (emulationtask != NULL) {
+    vTaskDelete(emulationtask);  // Delete the previous task
+    emulationtask = NULL;        // Reset task handle
+  }
+  inMenu = true;
+
   tft.fillScreen(TFT_BLACK);
   vga.fillRect(0, 0, 630, 390, 0);
   pinMode(FLAPPY_BIRD_SWITCH_BUTTON_PIN, INPUT_PULLUP);  // Initialize button pin
@@ -1327,7 +1355,7 @@ void runFlappyBird2P() {
   static int buttonState = HIGH;  // current debounced button state
   static int lastButtonReading = HIGH;  // previous reading from the input pin
 
-  int reading = myData.button_1_value;
+  int reading = myData.joystick_y_value; // FLAPPY_BIRD_SWITCH_BUTTON_PIN (joystick up to start)
 
   if (reading != lastButtonReading) {
     lastDebounceTime = millis();
@@ -1339,8 +1367,9 @@ void runFlappyBird2P() {
     if (reading != buttonState) {
       buttonState = reading;
 
-      if (buttonState == LOW && !flappyBirdStarted) {
+      if (buttonState == LOW) { //&& !flappyBirdStarted
         // Button is pressed, toggle between menu and game
+        flappyBirdStarted = false;
         inMenu = !inMenu;
         tft.fillScreen(TFT_BLACK);  // Clear screen
         vga.fillRect(0, 0, 630, 390, 0);
@@ -1352,8 +1381,10 @@ void runFlappyBird2P() {
 
   // Render either the menu or the game depending on the current state
   if (inMenu) {
+    flappyBirdStarted = false;
     renderFlappyBirdMenu();  // Show the menu
   } else {
+    flappyBirdStarted = true;
     FlappyBird2P();  // Run the game
   }
 }
@@ -1389,7 +1420,7 @@ void handleInput() {
   }
 
   // Start button press to start the game or restart after game over
-  if (isButtonPressed(myData.button_1_value, lastDebounceTimeStart, lastButtonStateStart)) {
+  if (isButtonPressed(myData.joystick_y_value, lastDebounceTimeStart, lastButtonStateStart)) {
     if (!flappyBirdStarted) {
       startGame();  // Start the game if it hasn't started yet
       flappyBirdStarted = true;
@@ -1419,16 +1450,113 @@ bool isButtonPressed(int value, unsigned long &lastDebounceTime, int &lastButton
 }
 
 
+// // Setup the menu system
+// void setupMenuSystem() {
+//   pinMode(SOUND_TOGGLE_BUTTON_PIN, INPUT_PULLUP);  // Configure button pin
+
+//   tft.fillScreen(TFT_BLACK);
+//   vga.fillRect(0, 0, 630, 390, 0);
+//   tft.setTextColor(TFT_WHITE);
+//   vga.setTextColor(73, 0);
+//   tft.setTextSize(2);
+  
+//   // Display menu title
+//   tft.setCursor(20, 10);
+//   vga.setCursor(20, 10 + 30);
+//   tft.println("Settings");
+//   vga.println("Settings");
+
+//   // Display updated sound state
+//   tft.setCursor(10, 40);
+//   vga.setCursor(10, 40+30);
+//   if (soundOn) {
+//     tft.setTextColor(TFT_GREEN);
+//     vga.setTextColor(1, 0);
+//     tft.println("Sound: ON");
+//     vga.println("Sound: ON");
+//   } else {
+//     tft.setTextColor(TFT_RED);
+//     vga.setTextColor(64, 0);
+//     tft.println("Sound: OFF");
+//     vga.println("Sound: OFF");
+//   }
+
+//   tft.setTextColor(TFT_WHITE);
+//   vga.setTextColor(73, 0);
+//   tft.setCursor(10, 80);
+//   vga.setCursor(10, 80+30);
+//   tft.println("Press X To");
+//   vga.println("Press X To");
+//   tft.setCursor(10, 110);
+//   vga.setCursor(10, 110+30);
+//   tft.println("Toggle Sound");
+//   vga.println("Toggle Sound");
+// }
+
+// void runMenuSystem() {
+//   // Check if the button is pressed (active-low button)
+//   if (myData.button_1_value == LOW) {
+//     delay(200);  // Simple debounce delay
+//     soundOn = !soundOn;  // Toggle the sound state
+    
+//     // Clear the screen and update the menu with the new sound state
+//     tft.fillScreen(TFT_BLACK);
+//     vga.fillRect(0, 0, 630, 390, 0);
+//     tft.setTextColor(TFT_WHITE);
+//     vga.setTextColor(73, 0);
+//     tft.setTextSize(2);
+    
+//     // Display menu title
+//     tft.setCursor(20, 10);
+//     vga.setCursor(20, 10 + 30);
+//     tft.println("Settings");
+//     vga.println("Settings");
+
+//     // Display updated sound state
+//     tft.setCursor(10, 40);
+//     vga.setCursor(10, 40+30);
+//     if (soundOn) {
+//       tft.setTextColor(TFT_GREEN);
+//       vga.setTextColor(1, 0);
+//       tft.println("Sound: ON");
+//       vga.println("Sound: ON");
+//     } else {
+//       tft.setTextColor(TFT_RED);
+//       vga.setTextColor(64, 0);
+//       tft.println("Sound: OFF");
+//       vga.println("Sound: OFF");
+//     }
+
+//     tft.setTextColor(TFT_WHITE);
+//     vga.setTextColor(73, 0);
+//     tft.setCursor(10, 80);
+//     vga.setCursor(10, 80+30);
+//     tft.println("Press X To");
+//     vga.println("Press X To");
+//     tft.setCursor(10, 110);
+//     vga.setCursor(10, 110+30);
+//     tft.println("Toggle Sound");
+//     vga.println("Toggle Sound");
+    
+//     // Add delay to avoid bouncing issues
+//     delay(500);
+//   }
+// }
+
+bool vgaOn = true;  // Toggle VGA display for flappy Bird
+
 // Setup the menu system
 void setupMenuSystem() {
-  pinMode(SOUND_TOGGLE_BUTTON_PIN, INPUT_PULLUP);  // Configure button pin
 
+  // Clear both screens (TFT and VGA)
   tft.fillScreen(TFT_BLACK);
   vga.fillRect(0, 0, 630, 390, 0);
+  
+  // Set text color for both displays
   tft.setTextColor(TFT_WHITE);
   vga.setTextColor(73, 0);
   tft.setTextSize(2);
-  
+
   // Display menu title
   tft.setCursor(20, 10);
   vga.setCursor(20, 10 + 30);
@@ -1437,7 +1565,7 @@ void setupMenuSystem() {
 
   // Display updated sound state
   tft.setCursor(10, 40);
-  vga.setCursor(10, 40+30);
+  vga.setCursor(10, 40 + 30);
   if (soundOn) {
     tft.setTextColor(TFT_GREEN);
     vga.setTextColor(1, 0);
@@ -1450,67 +1578,61 @@ void setupMenuSystem() {
     vga.println("Sound: OFF");
   }
 
+  // Display VGA state
+  tft.setCursor(10, 80);
+  vga.setCursor(10, 80 + 30);
+  if (vgaOn) {
+    tft.setTextColor(TFT_GREEN);
+    vga.setTextColor(1, 0);
+    tft.println("VGA: ON");
+    vga.println("VGA: ON");
+  } else {
+    tft.setTextColor(TFT_RED);
+    vga.setTextColor(64, 0);
+    tft.println("VGA: OFF");
+    vga.println("VGA: OFF");
+  }
+
+  // Instructions for toggling
   tft.setTextColor(TFT_WHITE);
   vga.setTextColor(73, 0);
-  tft.setCursor(10, 80);
-  vga.setCursor(10, 80+30);
-  tft.println("Press X To");
-  vga.println("Press X To");
-  tft.setCursor(10, 110);
-  vga.setCursor(10, 110+30);
-  tft.println("Toggle Sound");
-  vga.println("Toggle Sound");
+  tft.setCursor(10, 120);
+  vga.setCursor(10, 120 + 30);
+  tft.println("B1: Sound");
+  vga.println("B1: Sound");
+  
+  tft.setCursor(10, 180);
+  vga.setCursor(10, 180 + 30);
+  tft.println("B2: VGA");
+  vga.println("B2: VGA");
 }
 
 void runMenuSystem() {
-  // Check if the button is pressed (active-low button)
+  // Check if the sound toggle button is pressed (active-low button)
   if (myData.button_1_value == LOW) {
     delay(200);  // Simple debounce delay
     soundOn = !soundOn;  // Toggle the sound state
     
-    // Clear the screen and update the menu with the new sound state
-    tft.fillScreen(TFT_BLACK);
-    vga.fillRect(0, 0, 630, 390, 0);
-    tft.setTextColor(TFT_WHITE);
-    vga.setTextColor(73, 0);
-    tft.setTextSize(2);
-    
-    // Display menu title
-    tft.setCursor(20, 10);
-    vga.setCursor(20, 10 + 30);
-    tft.println("Settings");
-    vga.println("Settings");
+    // Redraw the menu
+    setupMenuSystem();
 
-    // Display updated sound state
-    tft.setCursor(10, 40);
-    vga.setCursor(10, 40+30);
-    if (soundOn) {
-      tft.setTextColor(TFT_GREEN);
-      vga.setTextColor(1, 0);
-      tft.println("Sound: ON");
-      vga.println("Sound: ON");
-    } else {
-      tft.setTextColor(TFT_RED);
-      vga.setTextColor(64, 0);
-      tft.println("Sound: OFF");
-      vga.println("Sound: OFF");
-    }
+    // Add delay to avoid bouncing issues
+    delay(500);
+  }
 
-    tft.setTextColor(TFT_WHITE);
-    vga.setTextColor(73, 0);
-    tft.setCursor(10, 80);
-    vga.setCursor(10, 80+30);
-    tft.println("Press X To");
-    vga.println("Press X To");
-    tft.setCursor(10, 110);
-    vga.setCursor(10, 110+30);
-    tft.println("Toggle Sound");
-    vga.println("Toggle Sound");
-    
+  // Check if the VGA toggle button is pressed (active-low button)
+  if (myData.button_2_value == LOW) {
+    delay(200);  // Simple debounce delay
+    vgaOn = !vgaOn;  // Toggle the VGA state
+
+    // Redraw the menu
+    setupMenuSystem();
+
     // Add delay to avoid bouncing issues
     delay(500);
   }
 }
+
 
 void loop() {
   static unsigned long lastDebounceTime = 0;

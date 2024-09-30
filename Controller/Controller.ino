@@ -156,7 +156,7 @@ void loop() {
     Serial.println(x-2000);
     Serial.println(angle);
     float pi = 3.14159;
-    float num = 3;
+    float num = 2.6; // AV To improve up sensitivity
     if (angle > (num * -1) * pi/12 && angle <= num * pi/12) {
       x = 1;
     }
@@ -170,6 +170,9 @@ void loop() {
       y = -1;
     }
   }
+
+
+
   // int x = (joystick_x_value < 1500) ? -1 : (joystick_x_value > 2500) ? 1 : 0;
   // int y = (joystick_y_value < 1500) ? 1 : (joystick_y_value > 2500) ? -1 : 0;
   int sw = !joystick_sw_value;

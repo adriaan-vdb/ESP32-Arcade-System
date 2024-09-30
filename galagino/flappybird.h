@@ -25,6 +25,8 @@ extern const int gapHeight;
 extern const int pipeWidth;
 extern const int groundHeight;
 
+extern bool vgaOn; // Toggle in menu system
+
 
 // Structure for the bird properties
 struct Bird {
@@ -56,8 +58,6 @@ void birdJump(Bird &bird);
 void startGame();
 
 #endif
-
-
 
 
 // flappybird.h

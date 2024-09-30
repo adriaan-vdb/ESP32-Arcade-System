@@ -39,14 +39,14 @@ char sub_cpu_reset = 1;
 
 #ifdef ENABLE_GALAGA
 // special variables for galaga
-unsigned char credit = 0;
-char credit_mode = 0;
+extern unsigned char credit = 10;
+extern char credit_mode = 0;
 int namco_cnt = 0;
 int namco_busy = 0;
 unsigned char cs_ctrl = 0;
 int nmi_cnt = 0;
-int coincredMode = 0;   
-unsigned char starcontrol = 0;
+int coincredMode = 1;   
+unsigned char starcontrol = 0; 
 #endif
 
 #ifdef ENABLE_PACMAN
