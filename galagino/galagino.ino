@@ -53,8 +53,20 @@ typedef struct struct_message {
     int button_2_value = 1;
 } struct_message;
 
+int second_controller_button = 1;
+
+typedef struct struct_message_raw {
+    int joystick_x_value = 0;
+    int joystick_y_value = 0;
+    int joystick_sw_value = 1;
+    int button_1_value = 1;
+    int button_2_value = 1;
+    int main_controller; // 1 if main controller; 0 if not
+} struct_message_raw;
+
 // Create a struct_message called myData
 struct_message myData;
+struct_message_raw myData_raw;
 
 VGA vga;
 
@@ -205,7 +217,18 @@ unsigned short greyscale(unsigned short in) {
 // JT VGA STUFF
 
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
+  memcpy(&myData_raw, incomingData, sizeof(myData_raw));
+
+  if (myData_raw.main_controller) {
+    myData.joystick_x_value = myData_raw.joystick_x_value;
+    myData.joystick_y_value = myData_raw.joystick_y_value;
+    myData.joystick_sw_value = myData_raw.joystick_sw_value;
+    myData.button_1_value = myData_raw.button_1_value;
+    myData.button_2_value = myData_raw.button_2_value;
+  }
+  else {
+    second_controller_button = myData_raw.button_1_value;
+  }
   // Serial.print("Data received: ");
   // Serial.println(myData.joystick_x_value);
   // Serial.println(myData.joystick_y_value);
@@ -1415,7 +1438,7 @@ void handleInput() {
   }
 
   // Player 2 jump (right button)
-  if (isButtonPressed(myData.button_2_value, lastDebounceTimeP2, lastButtonStateP2)) {
+  if (isButtonPressed(second_controller_button, lastDebounceTimeP2, lastButtonStateP2)) {
     birdJump(bird2);  // Player 2's bird jumps
   }
 

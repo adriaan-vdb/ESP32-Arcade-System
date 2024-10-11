@@ -31,6 +31,8 @@ TFT_eSPI tft = TFT_eSPI();
 // REPLACE WITH YOUR RECEIVER MAC Address
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
+int main_controller = 1;
+
 // Structure example to send data
 // Must match the receiver structure
 typedef struct struct_message {
@@ -39,6 +41,7 @@ typedef struct struct_message {
     int joystick_sw_value;
     int button_1_value;
     int button_2_value;
+    int main_controller; // 1 if main controller; 0 if not
 } struct_message;
 
 // Create a struct_message called myData
@@ -103,27 +106,35 @@ void drawShapes(int x, int y, int sw, int b1, int b2) {
   int ss = 15;
   
   // Draw Outlines
-  tft.drawString("MAIN CONTROLLER", 10, 10);
+  if (main_controller) {
+    tft.drawString("MAIN CONTROLLER", 10, 10);
 
-  tft.drawCircle(30, yy, 20, TFT_WHITE);
-  tft.drawCircle(80, yy, 20, TFT_WHITE);
+    tft.drawCircle(30, yy, 20, TFT_WHITE);
+    tft.drawCircle(80, yy, 20, TFT_WHITE);
 
-  tft.drawTriangle(jx+ss+js, yy, jx+ss, yy-js/2, jx+ss, yy+js/2, TFT_WHITE); // >
-  tft.drawTriangle(jx-ss-js, yy, jx-ss, yy-js/2, jx-ss, yy+js/2, TFT_WHITE); // <
-  tft.drawTriangle(jx-js/2, yy+ss, jx+js/2, yy+ss, jx, yy+ss+js, TFT_WHITE); // V
-  tft.drawTriangle(jx-js/2, yy-ss, jx+js/2, yy-ss, jx, yy-ss-js, TFT_WHITE); // ^
-  tft.drawCircle(jx, yy, 10, TFT_WHITE);
-  
+    tft.drawTriangle(jx+ss+js, yy, jx+ss, yy-js/2, jx+ss, yy+js/2, TFT_WHITE); // >
+    tft.drawTriangle(jx-ss-js, yy, jx-ss, yy-js/2, jx-ss, yy+js/2, TFT_WHITE); // <
+    tft.drawTriangle(jx-js/2, yy+ss, jx+js/2, yy+ss, jx, yy+ss+js, TFT_WHITE); // V
+    tft.drawTriangle(jx-js/2, yy-ss, jx+js/2, yy-ss, jx, yy-ss-js, TFT_WHITE); // ^
+    tft.drawCircle(jx, yy, 10, TFT_WHITE);
+    
 
-  // Fill conditionally
-  tft.fillCircle(30, yy, 18, (b1 == 1) ? TFT_WHITE : TFT_BLACK);
-  tft.fillCircle(80, yy, 18, (b2 == 1) ? TFT_WHITE : TFT_BLACK);
+    // Fill conditionally
+    tft.fillCircle(30, yy, 18, (b1 == 1) ? TFT_WHITE : TFT_BLACK);
+    tft.fillCircle(80, yy, 18, (b2 == 1) ? TFT_WHITE : TFT_BLACK);
 
-  tft.fillTriangle(jx+ss+js-2, yy, jx+ss+2, yy-js/2+2, jx+ss+2, yy+js/2-2, (x==1) ? TFT_WHITE : TFT_BLACK); // >
-  tft.fillTriangle(jx-ss-js+2, yy, jx-ss-2, yy-js/2+2, jx-ss-2, yy+js/2-2, (x==-1) ? TFT_WHITE : TFT_BLACK); // <
-  tft.fillTriangle(jx-js/2+2, yy+ss+2, jx+js/2-2, yy+ss+2, jx, yy+ss+js-2, (y==1) ? TFT_WHITE : TFT_BLACK); // V
-  tft.fillTriangle(jx-js/2+2, yy-ss-2, jx+js/2-2, yy-ss-2, jx, yy-ss-js+2, (y==-1) ? TFT_WHITE : TFT_BLACK); // ^
-  tft.fillCircle(jx, yy, 9, (sw == 1) ? TFT_WHITE : TFT_BLACK);
+    tft.fillTriangle(jx+ss+js-2, yy, jx+ss+2, yy-js/2+2, jx+ss+2, yy+js/2-2, (x==1) ? TFT_WHITE : TFT_BLACK); // >
+    tft.fillTriangle(jx-ss-js+2, yy, jx-ss-2, yy-js/2+2, jx-ss-2, yy+js/2-2, (x==-1) ? TFT_WHITE : TFT_BLACK); // <
+    tft.fillTriangle(jx-js/2+2, yy+ss+2, jx+js/2-2, yy+ss+2, jx, yy+ss+js-2, (y==1) ? TFT_WHITE : TFT_BLACK); // V
+    tft.fillTriangle(jx-js/2+2, yy-ss-2, jx+js/2-2, yy-ss-2, jx, yy-ss-js+2, (y==-1) ? TFT_WHITE : TFT_BLACK); // ^
+    tft.fillCircle(jx, yy, 9, (sw == 1) ? TFT_WHITE : TFT_BLACK);
+  }
+  else {
+    tft.drawString("ADD. CONTROLLER", 10, 10);
+    tft.drawCircle(30, yy, 20, TFT_WHITE);
+
+    tft.fillCircle(30, yy, 18, (b1 == 1) ? TFT_WHITE : TFT_BLACK);
+  }
 }
 
 void debugText(int x, int y, int sw, int b1, int b2) {
@@ -188,15 +199,24 @@ void loop() {
   myData.joystick_sw_value = joystick_sw_value;
   myData.button_1_value = button_1_value;
   myData.button_2_value = button_2_value;
-  
-  // Send message via ESP-NOW
-  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
-   
-  if (result == ESP_OK) {
-    Serial.println("Sent with success");
+  myData.main_controller = main_controller;
+
+  // Switch from main controller to add. controller (additional)
+  if (!myData.joystick_sw_value && !myData.button_1_value && !myData.button_2_value) {
+    main_controller = !main_controller;
+    delay(200);
+    tft.fillScreen(TFT_BLACK);
   }
   else {
-    Serial.println("Error sending the data");
+    // Send message via ESP-NOW
+    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+    
+    if (result == ESP_OK) {
+      Serial.println("Sent with success");
+    }
+    else {
+      Serial.println("Error sending the data");
+    }
   }
-  delay(100);
+  delay(50);
 }
