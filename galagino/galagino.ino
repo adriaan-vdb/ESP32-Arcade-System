@@ -41,6 +41,9 @@ bool soundOn = true;  // Initial state of sound (true = ON, false = OFF)
 #include "VGA.h"
 #include <FONT_9x16.h>
 
+// AV SD CARD READING
+#include <SPI.h>
+#include <SD.h>
 
 #include <esp_now.h>
 #include <WiFi.h>

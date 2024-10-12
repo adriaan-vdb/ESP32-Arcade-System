@@ -1,11 +1,173 @@
+
+
 #include "HardwareSerial.h"
 #include "flappybird.h"
 #include <TFT_eSPI.h>  // Using the TFT_eSPI library for display
 
+#include <SPI.h>
+#include <SD.h>
+
 // External display object from the main program
 extern TFT_eSPI tft;
-
 extern TFT_eSprite sprite2;
+
+#define SD_CS 10  // Chip Select for SD card
+#define SD_SCK 12 // Clock
+#define SD_MISO 43 // MISO // 13
+#define SD_MOSI 44 // MOSI // 11
+
+const char *filename = "/highscores.txt";
+const int MAX_SCORES = 5;
+File dataFile;
+
+int playerCount = 1;  // Initialize player counter
+int highscore_flag = false;
+
+// High score struct
+struct Score {
+    char name[10];
+    int score;
+};
+
+// const char* nameList[] = {"josh", "joshy", "yoshi", "joeline"};
+
+Score highScores[MAX_SCORES]; // Array to store top 5 scores
+
+void printHighScoresToSerial() {
+    Serial.println("High Scores:");
+    for (int i = 0; i < MAX_SCORES; i++) {
+        Serial.print(i + 1);  // Print rank number
+        Serial.print(". ");
+        Serial.print("Name: ");
+        Serial.print(highScores[i].name);  // Print player name
+        Serial.print(" - Score: ");
+        Serial.println(highScores[i].score);  // Print player score
+    }
+}
+
+
+// Function to read the high scores from the SD card
+void readHighScores() {
+    File file = SD.open(filename, FILE_READ);
+
+    if (!file) {
+        Serial.println("Failed to open highscore file. Initializing default scores.");
+        for (int i = 0; i < MAX_SCORES; i++) {
+            strcpy(highScores[i].name, "p");
+            highScores[i].score = 0;  // Initialize default score as 0
+        }
+        return;
+    }
+
+    // If the file exists, read the scores from the file
+    int i = 0;
+    while (file.available() && i < MAX_SCORES) {
+        Serial.println("Reading from SD");
+        file.readBytesUntil(',', highScores[i].name, sizeof(highScores[i].name));
+        highScores[i].score = file.parseInt();
+        file.read();  // Skip newline
+        i++;
+    }
+    file.close();
+}
+
+// Function to write high scores to the SD card
+void writeHighScores() {
+    // Check if the SD card is available and can be written to
+    if (!SD.begin(SD_CS)) {
+        Serial.println("SD card initialization failed. Cannot write scores.");
+        return;
+    }
+
+    // Attempt to open the file for writing, this will create the file if it doesn't exist
+    File file = SD.open(filename, FILE_WRITE);
+
+    if (!file) {
+        Serial.println("Failed to open highscore file for writing.");
+        return;
+    }
+
+
+    // Write high scores to the file
+    for (int i = 0; i < MAX_SCORES; i++) {
+        file.print(highScores[i].name);
+        file.print(",");
+        file.println(highScores[i].score);
+    }
+
+    file.close();  // Close the file after writing
+    Serial.println("High scores written successfully.");
+}
+
+
+
+void addScore(int score) {
+    bool playerExists = false;
+
+    // Check if the player already exists in the high score list
+    for (int i = 0; i < MAX_SCORES; i++) {
+        if (strcmp(highScores[i].name, ("player " + String(playerCount)).c_str()) == 0) {
+            playerExists = true;
+            Serial.println("Player already exists in high scores.");
+            break;
+        }
+    }
+
+    // If the player does not exist, proceed with adding the score
+    if (!playerExists) {
+        for (int i = 0; i < MAX_SCORES; i++) {
+            if (score > highScores[i].score) {
+                // Shift lower scores down
+                for (int j = MAX_SCORES - 1; j > i; j--) {
+                    highScores[j] = highScores[j - 1];
+                }
+                // Create a new player name with the current playerCount
+                String playerName = "player " + String(playerCount);
+                strcpy(highScores[i].name, playerName.c_str());
+                highScores[i].score = score;
+                writeHighScores(); // Save to SD card
+
+                // Increment the player count for the next new player
+                playerCount++;
+                Serial.println("New high score added.");
+                break;
+            }
+        }
+    }
+}
+
+// Display the high scores on the TTGO screen
+void displayHighScores() {
+    sprite2.setTextColor(TFT_WHITE);
+    sprite2.setTextSize(2);
+    sprite2.setCursor(10, 170);
+    sprite2.setTextColor(TFT_GREEN);
+    sprite2.println("HIGHSCORES:");
+    sprite2.setTextColor(TFT_WHITE);
+    sprite2.setTextSize(1);
+    for (int i = 0; i < MAX_SCORES; i++) {
+        sprite2.setCursor(10, 200 + i * 20);
+        sprite2.printf("%s: %d", highScores[i].name, highScores[i].score);
+    }
+    
+    sprite2.pushSprite(0, 0); // Push the sprite to the screen
+}
+
+
+// SD card initialization and high score setup
+void setupSDandHighScores() {
+
+    SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+
+    if (!SD.begin(SD_CS)) {
+        Serial.println("Card Mount Failed");
+        return;
+    }
+    readHighScores(); 
+}
+
+
+
 
 // Game variables
 const int gravity = 1;
@@ -194,6 +356,7 @@ void mainFlappyBird2P() {
         // If both players are dead, end the game
         if (player1Dead && player2Dead) {
             gameOver = true;
+            highscore_flag = true;
         }
 
         // Draw the ground
@@ -208,10 +371,15 @@ void mainFlappyBird2P() {
         sprite2.setTextSize(2);
         sprite2.setTextColor(TFT_YELLOW);
         sprite2.setCursor(150, 10);
+        sprite2.setRotation(1);
         sprite2.println(running_score);
+        sprite2.setRotation(0);
 
         sprite2.pushSprite(0, 0);  // Push the entire sprite to the screen
-    } else {
+    } else if (highscore_flag) {
+
+        setupSDandHighScores();
+
         // Display Game Over message
         sprite2.setCursor(5, 10);
         sprite2.setTextColor(TFT_WHITE);
@@ -223,16 +391,22 @@ void mainFlappyBird2P() {
         if(vgaOn) vga.println("Game Over");
 
         // Display final scores for both players
+
         sprite2.setTextSize(2);
         sprite2.setCursor(10, 50);
         sprite2.println("P1: " + String(bird1.score));
-        sprite2.setCursor(10, 80);
+        sprite2.setCursor(10, 50 + 30);
         sprite2.println("P2: " + String(bird2.score));
 
         if(vgaOn) vga.setCursor(10, 50+30);
         if(vgaOn) vga.println(("P1: " + String(bird1.score)).c_str());
         if(vgaOn) vga.setCursor(10, 80+30);
         if(vgaOn) vga.println(("P2: " + String(bird2.score)).c_str());
+
+        // DISPLAY HIGHSCORE SCREEN
+        int maxScore = max(bird1.score, bird2.score);
+        addScore(maxScore);  // Add the score to the leaderboard
+        displayHighScores(); // Show updated high scores
 
         // Press start to restart
         sprite2.setTextSize(1);
@@ -244,6 +418,8 @@ void mainFlappyBird2P() {
 
         sprite2.pushSprite(0, 0);  // Push the entire sprite to the screen
         // sprite2.deleteSprite();
+
+        highscore_flag = false;
     }
 }
 
