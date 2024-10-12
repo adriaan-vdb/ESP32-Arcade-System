@@ -15,6 +15,7 @@
 // AV add our own program to switch between that and galagino
 #define SWITCH_BUTTON_PIN 14
 #define NUM_PROGRAMS 3
+const int tonePin = 18;
 int currentProgram = 0;  // 0 for Galagino, 1 for 2P Mode, 2 for the Menu System
 // Galagino is the fancy arcade emulator
 // 2P Mode is our own flappy bird game
@@ -1065,6 +1066,7 @@ void emulation_task(void *p) {
 }
 
 void setup() {
+  tone(tonePin, 1000);
   Serial.begin(115200);
 
   // JT VGA STUFF
@@ -1089,7 +1091,7 @@ void setup() {
   tft.fillScreen(TFT_BLACK);
   tft.begin();
 
-  const PinConfig pins(-1,-1,1,-1,-1,  -1,-1,-1,2,-1,-1,  -1,-1,-1,3,-1,  10,11); // R G B h v
+  const PinConfig pins(-1,-1,1,-1,-1,  -1,-1,-1,2,-1,-1,  -1,-1,-1,3,-1,  13,11); // R G B h v
 
 	Mode mode = Mode::MODE_640x400x70;
 	
