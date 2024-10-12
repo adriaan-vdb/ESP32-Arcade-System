@@ -17,3 +17,4 @@ digdug_playfield.h
 debug.cfg
 debug_custom.json
 esp32.svd
+*.DS_Store
