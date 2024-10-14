@@ -116,7 +116,7 @@
 
 // audio config (leave both commented out for GPIO 25 for Audio)
 // #define SND_DIFF   // set to output differential audio on GPIO25 _and_ inverted on GPIO26
-#define SND_LEFT_CHANNEL // Use GPIO 26 for audio
+#define SND_LEFT_CHANNEL 18 // Use GPIO 26 for audio
 
 #define NUNCHUCK_INPUT
 

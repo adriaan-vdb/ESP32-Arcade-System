@@ -1107,6 +1107,8 @@ void setup() {
 
 	vga.setFont(FONT_9x16);
 	vga.start();
+
+  // vga.clear();
 	
 	// delay(5000);
 

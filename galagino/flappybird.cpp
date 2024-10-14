@@ -139,15 +139,24 @@ void addScore(int score) {
 // Display the high scores on the TTGO screen
 void displayHighScores() {
     sprite2.setTextColor(TFT_WHITE);
+    vga.setTextColor(73, 0);
     sprite2.setTextSize(2);
     sprite2.setCursor(10, 170);
+    vga.setCursor(10, 170+30);
     sprite2.setTextColor(TFT_GREEN);
+    vga.setTextColor(73, 1);
     sprite2.println("HIGHSCORES:");
+    vga.println("HIGHSCORES:");
+    
     sprite2.setTextColor(TFT_WHITE);
+    vga.setTextColor(73, 0);
     sprite2.setTextSize(1);
     for (int i = 0; i < MAX_SCORES; i++) {
         sprite2.setCursor(10, 200 + i * 20);
+        vga.setCursor(10, 200 + i * 20 + 30);
         sprite2.printf("%s: %d", highScores[i].name, highScores[i].score);
+        String output = String(highScores[i].name) + ": " + String(highScores[i].score);
+        vga.println(String(output).c_str());
     }
     
     sprite2.pushSprite(0, 0); // Push the sprite to the screen
@@ -377,6 +386,7 @@ void mainFlappyBird2P() {
 
         sprite2.pushSprite(0, 0);  // Push the entire sprite to the screen
     } else if (highscore_flag) {
+        vga.fillRect(0, 0, 630, 390, 0);
 
         setupSDandHighScores();
 
