@@ -999,6 +999,8 @@ _1942_END
         // AV commented audio
         //snd_transmit();
     } 
+
+
  
     // one screen at 60 Hz is 16.6ms
     unsigned long t1 = (micros()-t0)/1000;  // calculate time in milliseconds
@@ -1108,7 +1110,7 @@ void setup() {
 	vga.setFont(FONT_9x16);
 	vga.start();
 
-  // vga.clear();
+  vga.clear();
 	
 	// delay(5000);
 
@@ -1373,6 +1375,7 @@ void setupFlappyBird2P() {
 
   tft.fillScreen(TFT_BLACK);
   vga.fillRect(0, 0, 630, 390, 0);
+  vga.clear();
   pinMode(FLAPPY_BIRD_SWITCH_BUTTON_PIN, INPUT_PULLUP);  // Initialize button pin
   pinMode(BTN_START_PIN, INPUT_PULLUP);  // Start button
   pinMode(BTN_JUMP_P1_PIN, INPUT_PULLUP);  // Player 1 jump button
@@ -1403,6 +1406,7 @@ void runFlappyBird2P() {
         inMenu = !inMenu;
         tft.fillScreen(TFT_BLACK);  // Clear screen
         vga.fillRect(0, 0, 630, 390, 0);
+        vga.clear();
       }
     }
   }
@@ -1581,6 +1585,7 @@ void setupMenuSystem() {
   // Clear both screens (TFT and VGA)
   tft.fillScreen(TFT_BLACK);
   vga.fillRect(0, 0, 630, 390, 0);
+  vga.clear();
   
   // Set text color for both displays
   tft.setTextColor(TFT_WHITE);

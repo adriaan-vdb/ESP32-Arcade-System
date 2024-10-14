@@ -144,7 +144,7 @@ void displayHighScores() {
     sprite2.setCursor(10, 170);
     vga.setCursor(10, 170+30);
     sprite2.setTextColor(TFT_GREEN);
-    vga.setTextColor(73, 1);
+    vga.setTextColor(1, 0);
     sprite2.println("HIGHSCORES:");
     vga.println("HIGHSCORES:");
     
@@ -346,7 +346,8 @@ void mainFlappyBird2P() {
     }
     if (!gameOver) {
         // Update and draw pipes
-        if (vgaOn) vga.fillRect(0, 0, 630, 390, 0);
+        // if (vgaOn) vga.fillRect(0, 0, 630, 390, 0);
+        vga.clear();
         updatePipes();
         drawPipes();
 
@@ -460,6 +461,7 @@ void mainFlappyBird2P() {
 
 //     if (!gameOver) {
 //         tft.fillScreen(TFT_BLACK);
+          //  vga.clear();
 //         vga.fillRect(0, 0, 630, 390, 0);
 
 //         // Update and draw pipes
