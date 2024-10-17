@@ -6,19 +6,21 @@ const int tonePin = 18;  // Replace with the GPIO pin you're using
 void setup() {
   // Initialize serial communication for debugging purposes
   Serial.begin(115200);
+
+
 }
 
 void loop() {
   // No additional logic required in loop for this example
   // Start playing a tone at 1000Hz (1kHz) on the defined pin
-  tone(tonePin, 1000);  // Pin, frequency (in Hz)
+  tone(tonePin, 1047, 80);
+  tone(tonePin, 1568, 120);
 
-  // Wait for 5 seconds
-  delay(100);
+  delay(1000);
 
-  // Stop playing the tone
-  noTone(tonePin);
+  tone(tonePin, 1175, 80);
+  tone(tonePin, 1760, 120);
 
-  delay(500);
+  delay(1000);
   
 }

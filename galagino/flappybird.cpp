@@ -47,13 +47,38 @@ void printHighScoresToSerial() {
 
 
 // Function to read the high scores from the SD card
+// void readHighScores() {
+//     File file = SD.open(filename, FILE_READ);
+
+//     if (!file) {
+//         Serial.println("Failed to open highscore file. Initializing default scores.");
+//         for (int i = 0; i < MAX_SCORES; i++) {
+//             strcpy(highScores[i].name, "player");
+//             highScores[i].score = 0;  // Initialize default score as 0
+//         }
+//         return;
+//     }
+
+//     // If the file exists, read the scores from the file
+//     int i = 0;
+//     while (file.available() && i < MAX_SCORES) {
+//         Serial.println("Reading from SD");
+//         file.readBytesUntil(',', highScores[i].name, sizeof(highScores[i].name));
+//         highScores[i].score = file.parseInt();
+//         // file.read();  // Skip newline
+//         i++;
+//     }
+//     file.close();
+// }
+
+// Function to read the high scores from the SD card
 void readHighScores() {
     File file = SD.open(filename, FILE_READ);
 
     if (!file) {
         Serial.println("Failed to open highscore file. Initializing default scores.");
         for (int i = 0; i < MAX_SCORES; i++) {
-            strcpy(highScores[i].name, "p");
+            strcpy(highScores[i].name, "player");
             highScores[i].score = 0;  // Initialize default score as 0
         }
         return;
@@ -63,13 +88,26 @@ void readHighScores() {
     int i = 0;
     while (file.available() && i < MAX_SCORES) {
         Serial.println("Reading from SD");
-        file.readBytesUntil(',', highScores[i].name, sizeof(highScores[i].name));
+
+        // Read name (until the comma)
+        file.readBytesUntil(',', highScores[i].name, sizeof(highScores[i].name) - 1);
+        // highScores[i].name[sizeof(highScores[i].name) - 1] = '\0'; // Manually null-terminate the string
+
+        // Read score (parsing the integer)
         highScores[i].score = file.parseInt();
-        file.read();  // Skip newline
+
+        // Skip newline character ('\n' or '\r\n')
+        // file.read();  // Assumes a single newline after each name,score pair
+
         i++;
     }
+
+    Serial.println("ReadingHighScores");
+    printHighScoresToSerial();
+
     file.close();
 }
+
 
 // Function to write high scores to the SD card
 void writeHighScores() {
@@ -81,6 +119,7 @@ void writeHighScores() {
 
     // Attempt to open the file for writing, this will create the file if it doesn't exist
     File file = SD.open(filename, FILE_WRITE);
+    
 
     if (!file) {
         Serial.println("Failed to open highscore file for writing.");
@@ -90,9 +129,7 @@ void writeHighScores() {
 
     // Write high scores to the file
     for (int i = 0; i < MAX_SCORES; i++) {
-        file.print(highScores[i].name);
-        file.print(",");
-        file.println(highScores[i].score);
+        file.print(String(highScores[i].name) + "," + String(highScores[i].score)); //println
     }
 
     file.close();  // Close the file after writing
@@ -106,7 +143,7 @@ void addScore(int score) {
 
     // Check if the player already exists in the high score list
     for (int i = 0; i < MAX_SCORES; i++) {
-        if (strcmp(highScores[i].name, ("player " + String(playerCount)).c_str()) == 0) {
+        if (strcmp(highScores[i].name, ("player" + String(playerCount)).c_str()) == 0) {
             playerExists = true;
             Serial.println("Player already exists in high scores.");
             break;
@@ -128,7 +165,7 @@ void addScore(int score) {
                 writeHighScores(); // Save to SD card
 
                 // Increment the player count for the next new player
-                playerCount++;
+                // playerCount++;
                 Serial.println("New high score added.");
                 break;
             }
@@ -139,27 +176,30 @@ void addScore(int score) {
 // Display the high scores on the TTGO screen
 void displayHighScores() {
     sprite2.setTextColor(TFT_WHITE);
-    vga.setTextColor(73, 0);
+    if (vgaOn) vga.setTextColor(73, 0);
     sprite2.setTextSize(2);
     sprite2.setCursor(10, 170);
-    vga.setCursor(10, 170+30);
+    if (vgaOn) vga.setCursor(10, 170+30);
     sprite2.setTextColor(TFT_GREEN);
-    vga.setTextColor(1, 0);
+    if (vgaOn) vga.setTextColor(1, 0);
     sprite2.println("HIGHSCORES:");
-    vga.println("HIGHSCORES:");
+    if (vgaOn) vga.println("HIGHSCORES:");
     
     sprite2.setTextColor(TFT_WHITE);
-    vga.setTextColor(73, 0);
+    if (vgaOn) vga.setTextColor(73, 0);
     sprite2.setTextSize(1);
     for (int i = 0; i < MAX_SCORES; i++) {
         sprite2.setCursor(10, 200 + i * 20);
-        vga.setCursor(10, 200 + i * 20 + 30);
+        if (vgaOn) vga.setCursor(10, 200 + i * 20 + 30);
         sprite2.printf("%s: %d", highScores[i].name, highScores[i].score);
         String output = String(highScores[i].name) + ": " + String(highScores[i].score);
-        vga.println(String(output).c_str());
+        if (vgaOn) vga.println(String(output).c_str());
     }
     
     sprite2.pushSprite(0, 0); // Push the sprite to the screen
+
+    Serial.print("DisplayingHighScores");
+    printHighScoresToSerial();
 }
 
 
@@ -380,8 +420,7 @@ void mainFlappyBird2P() {
         // Display live score
         sprite2.setTextSize(2);
         sprite2.setTextColor(TFT_YELLOW);
-        sprite2.setCursor(150, 10);
-        sprite2.setRotation(1);
+        sprite2.setCursor(100, 10);
         sprite2.println(running_score);
         sprite2.setRotation(0);
 
@@ -415,8 +454,11 @@ void mainFlappyBird2P() {
         if(vgaOn) vga.println(("P2: " + String(bird2.score)).c_str());
 
         // DISPLAY HIGHSCORE SCREEN
-        int maxScore = max(bird1.score, bird2.score);
-        addScore(maxScore);  // Add the score to the leaderboard
+        // int maxScore = max(bird1.score, bird2.score);
+        addScore(bird1.score);  // Add the score to the leaderboard
+        playerCount++;
+        addScore(bird2.score);  // Add the score to the leaderboard
+        playerCount++;
         displayHighScores(); // Show updated high scores
 
         // Press start to restart

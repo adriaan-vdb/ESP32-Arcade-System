@@ -22,6 +22,9 @@ const int joystick_sw = 3;
 const int button_1 = 11;
 const int button_2 = 10;
 
+const int button_3 = 43;
+const int button_4 = 44;
+
 #include <esp_now.h>
 #include <WiFi.h>
 #include <TFT_eSPI.h> 
@@ -29,7 +32,7 @@ const int button_2 = 10;
 TFT_eSPI tft = TFT_eSPI(); 
 
 // REPLACE WITH YOUR RECEIVER MAC Address
-uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+uint8_t broadcastAddress[] = {0x30, 0x30, 0xF9, 0x59, 0x2D, 0x90};
 
 int main_controller = 1;
 
@@ -62,6 +65,12 @@ void setup() {
   // digitalWrite(joystick_sw, HIGH); // Random line that must be included
   pinMode(button_1, INPUT_PULLUP);
   pinMode(button_2, INPUT_PULLUP);
+  pinMode(button_3, INPUT_PULLUP);
+  pinMode(button_4, INPUT_PULLUP);
+
+  // Enable battery power
+  pinMode(15, OUTPUT);
+  digitalWrite(15, HIGH);
 
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
@@ -157,6 +166,8 @@ void loop() {
   int joystick_sw_value = digitalRead(joystick_sw);
   int button_1_value = digitalRead(button_1);
   int button_2_value = digitalRead(button_2);
+  int button_3_value = digitalRead(button_3);
+  int button_4_value = digitalRead(button_4);
 
   int x = 0;
   int y = 0;
@@ -187,8 +198,8 @@ void loop() {
   // int x = (joystick_x_value < 1500) ? -1 : (joystick_x_value > 2500) ? 1 : 0;
   // int y = (joystick_y_value < 1500) ? 1 : (joystick_y_value > 2500) ? -1 : 0;
   int sw = !joystick_sw_value;
-  int b1 = !button_1_value;
-  int b2 = !button_2_value;
+  int b1 = !(button_1_value && button_3_value);
+  int b2 = !(button_2_value && button_4_value);
 
   // Render variables
   debugText(x, y, sw, b1, b2);
@@ -197,8 +208,8 @@ void loop() {
   myData.joystick_x_value = joystick_x_value;
   myData.joystick_y_value = joystick_y_value;
   myData.joystick_sw_value = joystick_sw_value;
-  myData.button_1_value = button_1_value;
-  myData.button_2_value = button_2_value;
+  myData.button_1_value = button_1_value && button_3_value;
+  myData.button_2_value = button_2_value && button_4_value;
   myData.main_controller = main_controller;
 
   // Switch from main controller to add. controller (additional)
