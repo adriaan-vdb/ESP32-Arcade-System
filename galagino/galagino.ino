@@ -1279,6 +1279,9 @@ void setup() {
   // tone(tonePin, 1000);
   Serial.begin(115200);
 
+  pinMode(15, OUTPUT);
+  digitalWrite(15, HIGH);
+
   // JT VGA STUFF
   pinMode(joystick_sw, INPUT_PULLUP);
   // digitalWrite(joystick_sw, HIGH); // Random line that must be included
