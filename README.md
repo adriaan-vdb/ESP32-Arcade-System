@@ -63,14 +63,6 @@ elec3020-project/
 - VGA-compatible display
 - Speaker or piezo buzzer for sound output
 
-## Contributing
-
-Contributions are welcome! Please open issues or pull requests for bug fixes, new features, or documentation improvements.
-
-## License
-
-This project is licensed under the GPLv3 License. See the [LICENSE](LICENSE) file for details.
-
 ## Acknowledgements
 
 - Based on the original Galagino project by Till Harbaum ([GitHub](https://github.com/harbaum/galagino))
